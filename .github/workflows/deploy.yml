@@ -35,6 +35,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
+
+      # PageProps and LayoutProps are generated into .next/types and referenced
+      # from next-env.d.ts. Both are gitignored, so a clean checkout has neither
+      # and tsc cannot resolve them until they are generated.
+      - name: Generate route types
+        run: npx next typegen
+
       - name: Typecheck
         run: npx tsc --noEmit
       # Next 16 dropped linting from `next build`, so it has to run on its own
