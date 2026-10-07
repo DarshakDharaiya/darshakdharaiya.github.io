@@ -42,3 +42,6 @@ next-env.d.ts
 
 # asset QA screenshots (regenerated, not source)
 /output/playwright/
+
+# generated render harness copies
+/output/.tmp/

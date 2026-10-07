@@ -89,14 +89,16 @@ vec4 portraitAnimateEyes( vec4 original, vec2 uv ) {
   // Open eyes at rest are exactly the original texture, without extra mixing.
   if ( uPortraitBlink <= 0.001 && dot( uPortraitGaze, uPortraitGaze ) <= 0.000001 ) return original;
   vec2 pixel = vec2( uv.x, 1.0 - uv.y ) * 1024.0;
-  vec4 result = portraitEye( original, pixel, vec2( 436.0, 611.0 ), normalize( vec2( 1.0, 0.035 ) ), 81.0, 46.0, 20.0 );
-  return portraitEye( result, pixel, vec2( 714.0, 574.0 ), normalize( vec2( 1.0, -0.32 ) ), 74.0, 42.0, 20.0 );
+  vec4 result = portraitEye( original, pixel, vec2( 452.0, 574.0 ), normalize( vec2( 1.0, -0.038 ) ), 81.0, 46.0, 20.0 );
+  return portraitEye( result, pixel, vec2( 717.0, 573.0 ), normalize( vec2( 1.0, -0.402 ) ), 74.0, 42.0, 20.0 );
 }
 #endif
 `;
 
 /**
  * Adds restrained eye motion to the supplied 1024-square portrait projection.
+ * The centres and axes below are pixel coordinates in that exact texture, so
+ * they must be re-measured whenever output/build-portrait.cjs changes it.
  * This is calibrated texture animation, not an independently modeled eye rig;
  * it preserves the supplied eye appearance and supports modest gaze changes.
  * Requires the portrait's unchanged UV projection and a WebGL renderer.
@@ -120,7 +122,7 @@ export function createPortraitEyeMaterial(texture: THREE.Texture): PortraitEyeMa
       .replace("#include <map_pars_fragment>", `#include <map_pars_fragment>\n${eyeShader}`)
       .replace("#include <map_fragment>", animatedMap);
   };
-  material.customProgramCacheKey = () => "portrait-eye-material-v2";
+  material.customProgramCacheKey = () => "portrait-eye-material-v3";
 
   return {
     material,
