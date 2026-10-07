@@ -2,123 +2,76 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import poseData from "@/data/memojiPoses.json";
+import profileData from "@/data/memojiProfile.json";
 import { avatar } from "@/data/avatar";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { cn } from "@/lib/utils";
+import { createMemojiRenderer, type MemojiRenderer } from "@/lib/memoji/renderer";
+import { createBlinkController } from "@/lib/memoji/blink";
 
-type Pose = { index: number; yaw: number; pitch: number };
-const POSES: Pose[] = poseData.poses;
-const STRIP = poseData.src;
-const TILE = poseData.tile;
-
-
-const MAX_YAW = 90;
-const MAX_PITCH = 26;
-const FADE_MS = 150;
-/** Pitch counts for more than yaw when choosing a pose: the up and down
- *  renders only exist facing forward, so they must not win a turned pose. */
-const PITCH_WEIGHT = 2.4;
-/** A new pose must beat the current one by this much before it takes over,
- *  otherwise the head flickers between two renders on the boundary. */
-const HYSTERESIS = 0.82;
+const PORTRAIT = profileData.src;
+const MAX_YAW = 30;
+const MAX_PITCH = 12;
+const TOUCH_RETURN_MS = 2000;
 
 const clamp = (v: number, a = -1, b = 1) => Math.max(a, Math.min(b, v));
-/** Fine control near centre, full profile only at the extremes of travel. */
-const curve = (t: number) => Math.sign(t) * Math.pow(Math.abs(t), 1.55);
-
-function nearestPose(yaw: number, pitch: number) {
-  let best = 0;
-  let bestScore = Infinity;
-  for (const p of POSES) {
-    const dy = yaw - p.yaw;
-    const dp = (pitch - p.pitch) * PITCH_WEIGHT;
-    const score = dy * dy + dp * dp;
-    if (score < bestScore) { bestScore = score; best = p.index; }
-  }
-  return { index: best, score: bestScore };
-}
-
-function scoreOf(index: number, yaw: number, pitch: number) {
-  const p = POSES[index];
-  const dy = yaw - p.yaw;
-  const dp = (pitch - p.pitch) * PITCH_WEIGHT;
-  return dy * dy + dp * dp;
-}
 
 /**
- * The hero avatar: real Memoji renders at nine angles, from one full profile to
- * the other, chosen by where the pointer is and cross-faded as it moves.
- * Drawing actual renders rather than reprojecting one image is what lets the
- * head reach a true side view, with the nose in outline and a modelled ear.
+ * Pointer-following portrait inspired by the reference's neck rotation.
+ * The skull and modeled ears rotate together with a fixed texture atlas. Eyelids and
+ * gaze animate independently; depth is calibrated to the supplied side views.
  */
 export default function MemojiStage({ className }: { className?: string }) {
   const surface = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const resetRef = useRef<() => void>(() => {});
+  const motionChangedRef = useRef<() => void>(() => {});
   const reduced = useReducedMotion();
   const reducedRef = useRef(reduced);
   const captionId = useId();
   const [status, setStatus] = useState<"loading" | "ready" | "fallback">("loading");
   const reset = useCallback(() => resetRef.current(), []);
 
-  useEffect(() => { reducedRef.current = reduced; }, [reduced]);
+  useEffect(() => {
+    reducedRef.current = reduced;
+    motionChangedRef.current();
+  }, [reduced]);
 
   useEffect(() => {
     const host = surface.current;
     const canvas = canvasRef.current;
     if (!host || !canvas) return;
-    const context = canvas.getContext("2d", { alpha: true });
-    if (!context) { queueMicrotask(() => setStatus("fallback")); return; }
-
     const abort = new AbortController();
-    const frontIndex = POSES.findIndex((p) => p.yaw === 0 && p.pitch === 0);
-    let strip: HTMLImageElement | null = null;
+    let renderer: MemojiRenderer | null = null;
+    let contextAvailable = true;
     let disposed = false, settled = false, onscreen = true;
     let raf: number | null = null, lastTime = 0;
-    let current = frontIndex, previous = frontIndex, fadeStart = -1;
     let manual = false, lastInput = performance.now(), nodUntil = -1;
+    let returnTimer: number | undefined;
     let anchor: { x: number; y: number } | null = null;
     const aim = { x: 0, y: 0 };           // where we want to look, -1..1
     const eased = { x: 0, y: 0 };          // smoothed, drives the pose
-    const drag = { id: -1, x: 0, startX: 0, active: false };
+    const gaze = { x: 0, y: 0 };
+    const blinks = createBlinkController();
+    blinks.reset(performance.now());
+    const drag = { id: -1, x: 0, y: 0, startX: 0, startY: 0, active: false };
+    let suppressClick = false;
 
     const draw = (now: number) => {
-      if (!strip) return;
-      const fade = fadeStart < 0 ? 1 : Math.min((now - fadeStart) / FADE_MS, 1);
-      if (fade >= 1) fadeStart = -1;
-      const weight = 1 - (1 - fade) ** 3;
-      const scale = Math.min(canvas.width, canvas.height) / TILE;
-      const size = TILE * scale;
-      const x = (canvas.width - size) / 2;
-      const y = (canvas.height - size) / 2;
-
-      context.clearRect(0, 0, canvas.width, canvas.height);
-      // Add premultiplied colour and alpha; source-over would make the head
-      // translucent against the page midway through a cross-fade.
-      context.globalCompositeOperation = "lighter";
-      for (const [index, alpha] of [[previous, 1 - weight], [current, weight]] as const) {
-        if (alpha <= 0.001) continue;
-        context.globalAlpha = alpha;
-        context.drawImage(strip, index * TILE, 0, TILE, TILE, x, y, size, size);
-      }
-      context.globalAlpha = 1;
-      context.globalCompositeOperation = "source-over";
-      host.dataset.memojiPose = String(current);
-      host.dataset.memojiYaw = POSES[current].yaw.toFixed(0);
+      const still = reducedRef.current;
+      const yaw = eased.x * MAX_YAW, pitch = eased.y * MAX_PITCH;
+      // Tiny resting movement; pointer tracking always owns the gaze.
+      const resting = !manual && !drag.active && now - lastInput > 2600 && !still;
+      const roll = still ? 0 : -eased.x * .018 + (resting ? Math.sin(now / 2400) * .008 : 0);
+      const bob = resting ? Math.sin(now / 1800) * .003 : 0;
+      const blink = still ? 0 : blinks.sample(now);
+      renderer?.draw(yaw, pitch, roll, bob, blink, gaze.x, gaze.y);
+      host.dataset.memojiYaw = yaw.toFixed(2);
+      host.dataset.memojiPitch = pitch.toFixed(2);
+      host.dataset.memojiBlink = blink.toFixed(3);
     };
 
-    const select = (yaw: number, pitch: number, now: number) => {
-      const best = nearestPose(yaw, pitch);
-      if (best.index === current) return;
-      // Only switch once the candidate is clearly the better match.
-      if (best.score > scoreOf(current, yaw, pitch) * HYSTERESIS) return;
-      previous = current;
-      current = best.index;
-      fadeStart = reducedRef.current ? -1 : now;
-    };
-
-    const canRun = () => !disposed && strip !== null && onscreen && !document.hidden;
+    const canRun = () => !disposed && contextAvailable && renderer !== null && onscreen && !document.hidden;
     const schedule = () => { if (raf === null && canRun()) raf = requestAnimationFrame(tick); };
     const stop = () => { if (raf !== null) cancelAnimationFrame(raf); raf = null; lastTime = 0; };
 
@@ -128,15 +81,8 @@ export default function MemojiStage({ className }: { className?: string }) {
       const delta = lastTime ? Math.min((now - lastTime) / 1000, 0.05) : 1 / 60;
       lastTime = now;
       const still = reducedRef.current;
-      const idle = !manual && !drag.active && now - lastInput > 2600;
-
       let targetX = aim.x;
       let targetY = aim.y;
-      if (idle && !still) {
-        // A slow look around, so the avatar is not frozen when untouched.
-        targetX += Math.sin(now / 2600) * 0.26;
-        targetY += Math.sin(now / 3700) * 0.12;
-      }
       if (now < nodUntil && !still) {
         targetY += Math.sin(((nodUntil - now) / 620) * Math.PI) * 1.1;
       }
@@ -145,18 +91,16 @@ export default function MemojiStage({ className }: { className?: string }) {
 
       if (still) {
         eased.x = targetX; eased.y = targetY;
+        gaze.x = 0; gaze.y = 0;
       } else {
-        const k = 1 - Math.exp(-7 * delta);
-        eased.x += (targetX - eased.x) * k;
-        eased.y += (targetY - eased.y) * k;
+        // Reference: horizontal follows with more lag than vertical.
+        eased.x += (targetX - eased.x) * (1 - Math.exp(-6.3 * delta));
+        eased.y += (targetY - eased.y) * (1 - Math.exp(-13.4 * delta));
+        gaze.x += (targetX - gaze.x) * (1 - Math.exp(-20 * delta));
+        gaze.y += (targetY - gaze.y) * (1 - Math.exp(-20 * delta));
       }
-
-      select(curve(eased.x) * MAX_YAW, clamp(eased.y) * MAX_PITCH, now);
       draw(now);
-      if (!still) canvas.style.transform = `translate3d(${eased.x * 6}px, ${eased.y * 4}px, 0)`;
-
-      const moving = Math.abs(targetX - eased.x) + Math.abs(targetY - eased.y) > 0.0015;
-      if (!still && (moving || fadeStart >= 0 || idle || now < nodUntil)) schedule();
+      if (!still) schedule();
       else lastTime = 0;
     };
 
@@ -165,47 +109,64 @@ export default function MemojiStage({ className }: { className?: string }) {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.max(1, Math.round(rect.width * dpr));
       canvas.height = Math.max(1, Math.round(rect.height * dpr));
-      context.imageSmoothingEnabled = true;
-      context.imageSmoothingQuality = "high";
       draw(performance.now());
       schedule();
     };
 
     const look = (event: PointerEvent) => {
-      if (event.pointerType !== "mouse" || reducedRef.current || drag.active) return;
+      if (!["mouse", "pen"].includes(event.pointerType) || reducedRef.current || drag.active) return;
       if (manual) {
         // A key press or Reset owns the view until the pointer actually moves.
         if (!anchor) { anchor = { x: event.clientX, y: event.clientY }; return; }
         if (Math.hypot(event.clientX - anchor.x, event.clientY - anchor.y) <= 10) return;
         manual = false; anchor = null;
       }
-      const rect = host.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      // Usable across the whole page, not just over the avatar.
-      aim.x = clamp((event.clientX - rect.left - rect.width / 2) / Math.max(rect.width * 1.15, window.innerWidth * 0.42));
-      aim.y = clamp((event.clientY - rect.top - rect.height / 2) / Math.max(rect.height * 1.3, window.innerHeight * 0.45));
+      window.clearTimeout(returnTimer);
+      // Viewport coordinates match the reference and make both turns reachable
+      // even though this portrait sits on the right of the hero.
+      aim.x = clamp(event.clientX / window.innerWidth * 2 - 1);
+      aim.y = clamp(event.clientY / window.innerHeight * 2 - 1);
       lastInput = performance.now();
       schedule();
     };
 
-    const claim = () => { manual = true; anchor = null; lastInput = performance.now(); };
+    const claim = () => { window.clearTimeout(returnTimer); manual = true; anchor = null; lastInput = performance.now(); };
     resetRef.current = () => { claim(); aim.x = 0; aim.y = 0; nodUntil = -1; schedule(); };
-    const nod = () => { if (!reducedRef.current) { nodUntil = performance.now() + 620; schedule(); } };
+    const nod = () => {
+      if (suppressClick) { suppressClick = false; return; }
+      if (!reducedRef.current) {
+        const now = performance.now();
+        nodUntil = now + 620; blinks.trigger(now + 80); schedule();
+      }
+    };
+    const returnHome = () => { manual = false; aim.x = 0; aim.y = 0; nodUntil = -1; schedule(); };
+    motionChangedRef.current = () => {
+      resetRef.current();
+      eased.x = 0; eased.y = 0;
+      gaze.x = 0; gaze.y = 0;
+      blinks.reset(performance.now());
+      stop(); draw(performance.now()); schedule();
+    };
 
     const onDown = (event: PointerEvent) => {
-      if (event.pointerType === "mouse" || !event.isPrimary) return;
-      drag.id = event.pointerId; drag.x = event.clientX; drag.startX = aim.x; drag.active = false;
+      if (event.pointerType !== "touch" || !event.isPrimary || reducedRef.current) return;
+      suppressClick = false;
+      drag.id = event.pointerId; drag.x = event.clientX; drag.y = event.clientY;
+      drag.startX = aim.x; drag.startY = aim.y; drag.active = false;
       claim();
     };
     const onMove = (event: PointerEvent) => {
       if (event.pointerId !== drag.id) return;
       const dx = event.clientX - drag.x;
+      const dy = event.clientY - drag.y;
       if (!drag.active) {
-        if (Math.abs(dx) < 8) return;
+        if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
         drag.active = true;
+        suppressClick = true;
         host.setPointerCapture(event.pointerId);
       }
       aim.x = clamp(drag.startX + dx / Math.max(host.getBoundingClientRect().width * 0.6, 1));
+      aim.y = clamp(drag.startY + dy / Math.max(host.getBoundingClientRect().height * 0.8, 1));
       lastInput = performance.now();
       schedule();
     };
@@ -214,6 +175,8 @@ export default function MemojiStage({ className }: { className?: string }) {
       if (host.hasPointerCapture(event.pointerId)) host.releasePointerCapture(event.pointerId);
       drag.id = -1; drag.active = false;
       lastInput = performance.now();
+      window.clearTimeout(returnTimer);
+      returnTimer = window.setTimeout(returnHome, TOUCH_RETURN_MS);
     };
     const onKey = (event: KeyboardEvent) => {
       const keys = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "Escape", "Enter", " "];
@@ -228,18 +191,32 @@ export default function MemojiStage({ className }: { className?: string }) {
       if (event.key === "Enter" || event.key === " ") nod();
       schedule();
     };
-    const onVisibility = () => { if (document.hidden) stop(); else schedule(); };
-    const onBlur = () => { drag.id = -1; drag.active = false; };
+    const onVisibility = () => {
+      if (document.hidden) stop();
+      else { blinks.reset(performance.now()); schedule(); }
+    };
+    const onBlur = () => {
+      const touching = drag.id !== -1;
+      if (drag.id !== -1 && host.hasPointerCapture(drag.id)) host.releasePointerCapture(drag.id);
+      drag.id = -1; drag.active = false;
+      if (touching || !manual) { window.clearTimeout(returnTimer); returnHome(); }
+    };
+    const onLeave = () => { if (!manual && !drag.active) returnHome(); };
+    const onContextLost = () => {
+      contextAvailable = false;
+      stop(); setStatus("fallback");
+    };
 
     const resizeObserver = new ResizeObserver(resize);
     resizeObserver.observe(host);
     const io = new IntersectionObserver(([entry]) => {
       onscreen = entry.isIntersecting;
-      if (onscreen) schedule(); else stop();
+      if (onscreen) { blinks.reset(performance.now()); schedule(); } else stop();
     });
     io.observe(host);
     window.addEventListener("pointermove", look, { passive: true });
     window.addEventListener("blur", onBlur);
+    document.documentElement.addEventListener("pointerleave", onLeave);
     document.addEventListener("visibilitychange", onVisibility);
     host.addEventListener("pointerdown", onDown, { passive: true });
     host.addEventListener("pointermove", onMove, { passive: true });
@@ -247,6 +224,7 @@ export default function MemojiStage({ className }: { className?: string }) {
     host.addEventListener("pointercancel", onUp);
     host.addEventListener("click", nod);
     host.addEventListener("keydown", onKey);
+    canvas.addEventListener("webglcontextlost", onContextLost);
     resize();
 
     const fail = () => { if (!disposed && !settled) { settled = true; window.clearTimeout(timer); setStatus("fallback"); } };
@@ -255,8 +233,8 @@ export default function MemojiStage({ className }: { className?: string }) {
     void (async () => {
       let url: string | null = null;
       try {
-        const response = await fetch(STRIP, { signal: abort.signal });
-        if (!response.ok) throw new Error("pose strip unavailable");
+        const response = await fetch(PORTRAIT, { signal: abort.signal });
+        if (!response.ok) throw new Error("portrait unavailable");
         const blob = await response.blob();
         if (disposed || settled) return;
         url = URL.createObjectURL(blob);
@@ -265,8 +243,9 @@ export default function MemojiStage({ className }: { className?: string }) {
         image.src = url;
         await image.decode();
         if (disposed || settled) return;
-        if (image.naturalWidth < TILE * POSES.length) throw new Error("pose strip is the wrong size");
-        strip = image;
+        if (image.naturalWidth !== profileData.tile * profileData.count || image.naturalHeight !== profileData.tile) throw new Error("portrait atlas is the wrong size");
+        renderer = createMemojiRenderer(canvas, image);
+        if (!renderer) throw new Error("portrait renderer unavailable");
         settled = true;
         window.clearTimeout(timer);
         draw(performance.now());
@@ -283,11 +262,16 @@ export default function MemojiStage({ className }: { className?: string }) {
       disposed = true;
       abort.abort();
       window.clearTimeout(timer);
+      window.clearTimeout(returnTimer);
       stop();
+      renderer?.dispose();
+      resetRef.current = () => {};
+      motionChangedRef.current = () => {};
       resizeObserver.disconnect();
       io.disconnect();
       window.removeEventListener("pointermove", look);
       window.removeEventListener("blur", onBlur);
+      document.documentElement.removeEventListener("pointerleave", onLeave);
       document.removeEventListener("visibilitychange", onVisibility);
       host.removeEventListener("pointerdown", onDown);
       host.removeEventListener("pointermove", onMove);
@@ -295,6 +279,7 @@ export default function MemojiStage({ className }: { className?: string }) {
       host.removeEventListener("pointercancel", onUp);
       host.removeEventListener("click", nod);
       host.removeEventListener("keydown", onKey);
+      canvas.removeEventListener("webglcontextlost", onContextLost);
     };
   }, []);
 
@@ -313,10 +298,11 @@ export default function MemojiStage({ className }: { className?: string }) {
             ? avatar.portrait.alt
             : reduced
               ? "Interactive Memoji. Use the arrow keys to turn the head, Escape to face forward."
-              : "Interactive Memoji. Move the pointer or swipe to turn the head from one profile to the other. Arrow keys turn it, Enter nods, Escape faces forward."
+              : "Interactive Memoji. Move the pointer to look around, or swipe to turn the head. Arrow keys turn it, Enter nods, Escape faces forward."
         }
         aria-describedby={captionId}
         data-memoji-state={status}
+        data-memoji-renderer="3d"
         className="relative size-full rounded-full [touch-action:pan-y] focus-visible:outline-offset-4"
       >
         {!ready && (
@@ -330,7 +316,7 @@ export default function MemojiStage({ className }: { className?: string }) {
         <p id={captionId} className="whitespace-nowrap">
           {failed ? "Memoji portrait" : reduced ? "Use the arrow keys" : (
             <>
-              <span className="[@media(pointer:coarse)]:hidden">Move to turn · click to nod</span>
+              <span className="[@media(pointer:coarse)]:hidden">Move to look around · click to nod</span>
               <span className="hidden [@media(pointer:coarse)]:inline">Swipe to turn</span>
             </>
           )}
