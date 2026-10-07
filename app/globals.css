@@ -1,26 +1,359 @@
 @import "tailwindcss";
 
+/* Class-based dark mode driven by <html data-theme="dark|light"> */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ──────────────────────────────────────────────────────────────
+   DESIGN TOKENS
+   Every visual primitive lives here. Components consume these via
+   Tailwind theme utilities (bg-bg, text-fg, rounded-glass, ease-out-expo…)
+   ────────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* Surfaces — warm white */
+  --bg: #f6f4f1;
+  --bg-elevated: #ffffff;
+  --fg: #1d1d1f;
+  --fg-muted: #6e6e73;
+  --fg-subtle: #a1a1a6;
+  --line: rgb(29 29 31 / 0.08);
+  --line-strong: rgb(29 29 31 / 0.14);
+
+  /* Accent — restrained indigo; used sparingly for state, never decoration */
+  --accent: #4b55d6;
+  --accent-soft: rgb(75 85 214 / 0.1);
+
+  /* Glass */
+  --glass-bg: rgb(255 255 255 / 0.55);
+  --glass-bg-strong: rgb(255 255 255 / 0.78);
+  --glass-border: rgb(255 255 255 / 0.7);
+  --glass-highlight: rgb(255 255 255 / 0.9);
+  --glass-blur: 22px;
+
+  /* Shadows — soft, layered, gray */
+  --shadow-sm: 0 1px 2px rgb(16 16 20 / 0.05), 0 2px 8px rgb(16 16 20 / 0.04);
+  --shadow-md: 0 2px 6px rgb(16 16 20 / 0.04), 0 12px 32px -8px rgb(16 16 20 / 0.12);
+  --shadow-lg: 0 4px 12px rgb(16 16 20 / 0.04), 0 32px 80px -24px rgb(16 16 20 / 0.22);
+  --shadow-glow: 0 0 0 1px var(--line), 0 30px 90px -30px rgb(75 85 214 / 0.35);
+
+  /* 3D scene colors (read by WebGL on theme change) */
+  --particle-a: #3b3f58;
+  --particle-b: #6b74e0;
+  --scene-fog: #f6f4f1;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #060709;
+  --bg-elevated: #101114;
+  --fg: #f5f5f7;
+  --fg-muted: #9a9aa1;
+  --fg-subtle: #5f5f66;
+  --line: rgb(255 255 255 / 0.07);
+  --line-strong: rgb(255 255 255 / 0.13);
+
+  --accent: #8b95ff;
+  --accent-soft: rgb(139 149 255 / 0.12);
+
+  --glass-bg: rgb(22 23 28 / 0.5);
+  --glass-bg-strong: rgb(22 23 28 / 0.78);
+  --glass-border: rgb(255 255 255 / 0.08);
+  --glass-highlight: rgb(255 255 255 / 0.14);
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 2px 6px rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.6);
+  --shadow-lg: 0 4px 12px rgb(0 0 0 / 0.3), 0 40px 100px -30px rgb(0 0 0 / 0.8);
+  --shadow-glow: 0 0 0 1px var(--line), 0 30px 100px -30px rgb(139 149 255 / 0.35);
+
+  --particle-a: #c9cbe0;
+  --particle-b: #8b95ff;
+  --scene-fog: #060709;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Color */
+  --color-bg: var(--bg);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  /* Typography */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: var(--font-instrument-serif), ui-serif, Georgia, serif;
+
+  /* Shadow */
+  --shadow-soft-sm: var(--shadow-sm);
+  --shadow-soft-md: var(--shadow-md);
+  --shadow-soft-lg: var(--shadow-lg);
+  --shadow-glow: var(--shadow-glow);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  /* Fluid type scale — clamps between phone and ultrawide */
+  --text-display: clamp(3.25rem, 1.2rem + 8.4vw, 10rem);
+  --text-display--line-height: 0.9;
+  --text-display--letter-spacing: -0.055em;
+  --text-h1: clamp(2.5rem, 1.4rem + 4.4vw, 6rem);
+  --text-h1--line-height: 0.95;
+  --text-h1--letter-spacing: -0.045em;
+  --text-h2: clamp(2rem, 1.3rem + 2.8vw, 4rem);
+  --text-h2--line-height: 1.02;
+  --text-h2--letter-spacing: -0.035em;
+  --text-h3: clamp(1.375rem, 1.1rem + 1vw, 2rem);
+  --text-h3--line-height: 1.15;
+  --text-h3--letter-spacing: -0.02em;
+  --text-lead: clamp(1.0625rem, 0.95rem + 0.45vw, 1.375rem);
+  --text-lead--line-height: 1.5;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--letter-spacing: 0.18em;
+
+  /* Radius */
+  --radius-pill: 999px;
+  --radius-glass: 1.75rem;
+  --radius-card: 2.25rem;
+
+  /* Spacing additions */
+  --spacing-section: clamp(7rem, 4rem + 10vw, 13rem);
+  --spacing-gutter: clamp(1.25rem, 0.5rem + 3vw, 4rem);
+
+  /* Easing — mirrored in lib/animation.ts */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+
+  --breakpoint-3xl: 1920px;
+}
+
+/* ────────────────────────── Base ────────────────────────── */
+html {
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  overflow-x: clip;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+/* Hide native cursor only when the custom cursor is active (fine pointers) */
+html.has-custom-cursor,
+html.has-custom-cursor * {
+  cursor: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ────────────────────────── Utilities ────────────────────────── */
+@utility glass {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    var(--shadow-md);
+}
+
+@utility glass-strong {
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    inset 0 1px 0 0 var(--glass-highlight),
+    var(--shadow-lg);
+}
+
+@utility container-x {
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-inline: var(--spacing-gutter);
+}
+
+@utility eyebrow {
+  font-family: var(--font-mono);
+  font-size: var(--text-eyebrow);
+  letter-spacing: var(--text-eyebrow--letter-spacing);
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+@utility hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line-strong) 20%, var(--line-strong) 80%, transparent);
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+/* Hover underline that draws from left to right */
+@utility link-underline {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0% 1px no-repeat;
+  transition: background-size 0.6s var(--ease-out-expo), color 0.3s;
+  &:hover,
+  &:focus-visible {
+    background-size: 100% 1px;
+  }
+}
+
+/* Ambient edge glow (strongest in dark mode, barely-there in light) */
+.ambient-glow {
+  background: radial-gradient(closest-side, color-mix(in oklab, var(--accent) 34%, transparent), transparent);
+  filter: blur(40px);
+  opacity: 0.28;
+  animation: ambient-drift 22s var(--ease-in-out-quart) infinite alternate;
+}
+[data-theme="dark"] .ambient-glow {
+  opacity: 0.55;
+}
+@keyframes ambient-drift {
+  to {
+    transform: translate3d(4vmax, 6vmax, 0) scale(1.12);
+  }
+}
+
+/* Memoji float + breathing contact shadow */
+.memoji-float {
+  animation: memoji-float 6s var(--ease-in-out-quart) infinite;
+}
+.memoji-shadow {
+  animation: memoji-shadow 6s var(--ease-in-out-quart) infinite;
+}
+@keyframes memoji-float {
+  50% {
+    transform: translateY(-3.5%);
+  }
+}
+@keyframes memoji-shadow {
+  50% {
+    transform: translateX(-50%) scale(0.82);
+    opacity: 0.6;
+  }
+}
+
+/* Grain overlay — keeps flat surfaces from looking digital */
+.grain::after {
+  content: "";
+  position: fixed;
+  inset: -50%;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ─────────────────── Theme change (View Transitions) ─────────────────── */
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+html.theme-transition ::view-transition-new(root) {
+  animation: theme-reveal 700ms var(--ease-in-out-quart) both;
+}
+
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 0%));
+  }
+  to {
+    clip-path: circle(150vmax at var(--theme-x, 50%) var(--theme-y, 0%));
+  }
+}
+
+/* ─────────────────── Page transitions (React <ViewTransition>) ─────────────────── */
+::view-transition-old(.page-forward),
+::view-transition-old(.page-back) {
+  animation: page-recede 380ms var(--ease-in-out-quart) both;
+}
+::view-transition-new(.page-forward),
+::view-transition-new(.page-back) {
+  animation: page-emerge 620ms var(--ease-out-expo) 200ms both;
+}
+
+@keyframes page-recede {
+  to {
+    opacity: 0;
+    transform: scale(0.955);
+    filter: blur(14px);
+  }
+}
+@keyframes page-emerge {
+  from {
+    opacity: 0;
+    transform: scale(1.03) translateY(16px);
+    filter: blur(12px);
+  }
+}
+
+::view-transition-group(.morph) {
+  animation-duration: 640ms;
+  animation-timing-function: var(--ease-out-expo);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: via-blur;
+}
+@keyframes via-blur {
+  35% {
+    filter: blur(4px);
+  }
+}
+
+/* ─────────────────── Reduced motion ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
 }

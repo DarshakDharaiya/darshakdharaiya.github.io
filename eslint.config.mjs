@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Asset-generation tooling, not shipped application code.
+    "output/**",
   ]),
 ]);
 

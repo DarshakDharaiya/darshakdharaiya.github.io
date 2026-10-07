@@ -1,0 +1,7 @@
+Use case: stylized-concept
+Asset type: transparent portrait asset for a portfolio website hero.
+Input image 1: visual reference for the character and 3D Memoji style.
+Primary request: create a high-quality 3D rendered floating head just like the reference: young man with light warm peach skin, voluminous brown side-swept sculpted hair, expressive hazel eyes with a blue-grey outer iris ring, brown eyebrows with one slightly raised, small rounded nose, clean-shaven face and a gentle closed-mouth smile. Match the proportions, friendly expression and polished soft vinyl-like shading of the reference closely.
+Composition: head only, ears included, no neck, body or accessories. Slight three-quarter turn as in reference. Center the entire head in a square canvas, occupying about 85% of the height, all hair and chin fully visible with modest padding.
+Lighting: soft studio illumination, dimensional shadows and subtle warm highlights.
+Background: genuinely transparent alpha. Remove all horizontal lines and all background content from the reference. No text, no border, no pedestal, no watermark, no pink edge artifacts.
