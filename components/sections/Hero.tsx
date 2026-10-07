@@ -13,7 +13,7 @@ import { site } from "@/data/site";
 import { socials } from "@/data/social";
 import { ease } from "@/lib/animation";
 
-const FacePortrait = dynamic(() => import("@/components/three/FacePortrait"), { ssr: false });
+const MemojiStage = dynamic(() => import("@/components/sections/MemojiStage"), { ssr: false });
 
 const fadeUp = (delay: number) => ({
   initial: { opacity: 0, y: 24, filter: "blur(8px)" },
@@ -44,7 +44,7 @@ export function Hero() {
         style={reduced ? undefined : { opacity, y, filter: blur, scale }}
         className="container-x flex flex-1 flex-col justify-center gap-12 pt-24 pb-28 md:pb-24 md:pt-32 lg:grid lg:grid-cols-12 lg:items-center lg:gap-8"
       >
-        <FacePortrait className="max-w-[17rem] sm:max-w-xs lg:order-2 lg:col-span-5 lg:max-w-[34rem]" />
+        <MemojiStage className="max-w-[17rem] sm:max-w-xs lg:order-2 lg:col-span-5 lg:max-w-[34rem]" />
         <div className="max-w-[min(100%,52rem)] lg:order-1 lg:col-span-7">
           <motion.p {...fadeUp(0.15)} className="eyebrow flex items-center gap-3">
             <span className="relative flex size-2" aria-hidden>

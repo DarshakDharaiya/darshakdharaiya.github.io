@@ -9,7 +9,7 @@ import { useLenis } from "./SmoothScroll";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { DMark, SocialIcon } from "@/components/ui/Icons";
 import { socials } from "@/data/social";
-import { MemojiBadge } from "@/components/sections/MemojiPortrait";
+import { MemojiBadge } from "@/components/ui/MemojiBadge";
 import { site } from "@/data/site";
 import { cn } from "@/lib/utils";
 

@@ -1,0 +1,52 @@
+{
+  "src": "/memoji/poses.webp",
+  "tile": 512,
+  "count": 9,
+  "poses": [
+    {
+      "index": 0,
+      "yaw": -90,
+      "pitch": 0
+    },
+    {
+      "index": 1,
+      "yaw": -38,
+      "pitch": 0
+    },
+    {
+      "index": 2,
+      "yaw": -20,
+      "pitch": 0
+    },
+    {
+      "index": 3,
+      "yaw": 0,
+      "pitch": -26
+    },
+    {
+      "index": 4,
+      "yaw": 0,
+      "pitch": 0
+    },
+    {
+      "index": 5,
+      "yaw": 0,
+      "pitch": 26
+    },
+    {
+      "index": 6,
+      "yaw": 20,
+      "pitch": 0
+    },
+    {
+      "index": 7,
+      "yaw": 38,
+      "pitch": 0
+    },
+    {
+      "index": 8,
+      "yaw": 90,
+      "pitch": 0
+    }
+  ]
+}
