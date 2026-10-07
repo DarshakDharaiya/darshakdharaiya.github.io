@@ -5,7 +5,7 @@
  * Source: Darshak's résumé (Aug 2026). Update here and the whole site follows.
  */
 export const site = {
-  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://darshak.dev", // TODO: your production domain
+  url: process.env.NEXT_PUBLIC_SITE_URL ?? "https://darshakdharaiya.github.io",
   name: "Darshak Dharaiya",
   firstName: "Darshak",
   lastName: "Dharaiya",
