@@ -10,6 +10,7 @@ import { SocialIcon } from "@/components/ui/Icons";
 import { useLenis } from "@/components/layout/SmoothScroll";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { site } from "@/data/site";
+import { heroProof } from "@/data/stats";
 import { socials } from "@/data/social";
 import { ease } from "@/lib/animation";
 
@@ -77,7 +78,21 @@ export function Hero() {
             {site.statement}
           </motion.p>
 
-          <motion.div {...fadeUp(1.2)} className="mt-10 flex flex-wrap items-center gap-3">
+          {/* Proof before the ask. These are the numbers buried in Achievements,
+              lifted above the fold where a recruiter skimming for a minute sees them. */}
+          <motion.dl
+            {...fadeUp(1.15)}
+            className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4 sm:gap-x-10"
+          >
+            {heroProof.map((stat) => (
+              <div key={stat.label} className="flex flex-col">
+                <dd className="text-h3 font-semibold tracking-[-0.03em]">{stat.value}</dd>
+                <dt className="mt-0.5 text-sm text-fg-muted">{stat.label}</dt>
+              </div>
+            ))}
+          </motion.dl>
+
+          <motion.div {...fadeUp(1.3)} className="mt-10 flex flex-wrap items-center gap-3">
             <Button
               href="/#work"
               arrow="right"
@@ -96,7 +111,7 @@ export function Hero() {
             </Button>
           </motion.div>
 
-          <motion.ul {...fadeUp(1.35)} className="mt-10 flex items-center gap-2" aria-label="Social links">
+          <motion.ul {...fadeUp(1.45)} className="mt-10 flex items-center gap-2" aria-label="Social links">
             {socials.map((s) => (
               <li key={s.id}>
                 <Magnetic strength={0.4}>

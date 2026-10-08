@@ -14,3 +14,14 @@ export const achievements = [
   { value: Math.max(...rated.map((p) => p.store.rating ?? 0)), decimals: 1, suffix: "★", label: "Highest store rating" },
   { value: avgRating, decimals: 1, suffix: "★", label: "Average rating across apps" },
 ];
+
+/**
+ * The three facts worth showing before anyone scrolls. Same derivation as
+ * `achievements` above, formatted as strings because the hero does not animate them —
+ * a counter that ticks up competes with the headline reveal rather than supporting it.
+ */
+export const heroProof = [
+  { value: `${installsM}M+`, label: "installs on Google Play" },
+  { value: `${millionPlus}`, label: "apps past one million" },
+  { value: `${Math.max(...rated.map((p) => p.store.rating ?? 0)).toFixed(1)}★`, label: "top store rating" },
+];
