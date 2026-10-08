@@ -84,3 +84,41 @@ export type Experience = {
 export type SkillLevel = "core" | "strong" | "familiar";
 export type Skill = { name: string; level: SkillLevel };
 export type SkillCategory = { id: string; title: string; blurb: string; skills: Skill[] };
+
+/* ───────────────────────────── Writing ───────────────────────────── */
+
+/**
+ * Post bodies are structured blocks rather than Markdown or MDX: the rest of the
+ * site is already data-driven TypeScript, and this keeps posts type-checked, free
+ * of a parser dependency, and renderable with the same components the case studies
+ * use (CodeBlock in particular).
+ */
+export type PostBlock =
+  | { type: "p"; text: string }
+  | { type: "h2"; text: string }
+  | { type: "h3"; text: string }
+  | { type: "list"; items: string[]; ordered?: boolean }
+  | { type: "code"; snippet: CodeSnippet }
+  | { type: "note"; tone: "tip" | "warn"; title: string; text: string }
+  | { type: "table"; caption?: string; head: string[]; rows: string[][] };
+
+export type PostCategory = "Problem → Solution" | "Deep dive" | "What's new";
+
+export type Post = {
+  slug: string;
+  title: string;
+  /** One line for cards, meta description and OG */
+  excerpt: string;
+  category: PostCategory;
+  /** ISO date — drives sort order and <time dateTime> */
+  date: string;
+  /** Whole minutes, rounded from the drafted body */
+  readingMinutes: number;
+  tags: string[];
+  /** Pulled out above the body as the question the post answers */
+  question: string;
+  body: PostBlock[];
+  /** Shown as the closing summary */
+  takeaways: string[];
+  featured?: boolean;
+};
