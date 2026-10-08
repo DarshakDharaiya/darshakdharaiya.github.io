@@ -30,7 +30,12 @@ export async function generateMetadata(props: PageProps<"/work/[slug]">): Promis
     title: `${p.title} — Case study`,
     description: p.description,
     alternates: { canonical: `/work/${p.slug}` },
-    openGraph: { title: `${p.title} — ${site.name}`, description: p.description, images: [p.screenshots[0].src] },
+    openGraph: {
+      title: `${p.title} — ${site.name}`,
+      description: p.description,
+      // The generated 1.91:1 card, not a 720x1280 screenshot that crops to a sliver.
+      images: [{ url: `/work/${p.slug}/og.png`, width: 1200, height: 630, type: "image/png" }],
+    },
   };
 }
 

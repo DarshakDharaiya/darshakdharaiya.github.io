@@ -11,6 +11,7 @@ import { CustomCursor } from "@/components/layout/CustomCursor";
 import { SceneMoodObserver } from "@/components/layout/SceneMoodObserver";
 import { Background } from "@/components/three/Background";
 import { ResumeTab } from "@/components/layout/ResumeTab";
+import { Analytics } from "@/components/layout/Analytics";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"], display: "swap" });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap" });
@@ -23,6 +24,19 @@ const instrumentSerif = Instrument_Serif({
 });
 
 const description = `${site.name} — ${site.roles.join(" · ")}. ${site.statement}`;
+
+/**
+ * Generated at build time by app/og.png. Declared explicitly rather than through
+ * the `opengraph-image` file convention, which emits an extensionless file that
+ * GitHub Pages serves with the wrong Content-Type.
+ */
+const ogImage = {
+  url: "/og.png",
+  width: 1200,
+  height: 630,
+  type: "image/png",
+  alt: `${site.name} — ${site.roles[0]}`,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -39,8 +53,9 @@ export const metadata: Metadata = {
     title: `${site.name} — ${site.roles[0]}`,
     description,
     locale: "en_US",
+    images: [ogImage],
   },
-  twitter: { card: "summary_large_image", title: site.name, description },
+  twitter: { card: "summary_large_image", title: site.name, description, images: [ogImage] },
   robots: { index: true, follow: true },
 };
 
@@ -100,6 +115,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <CustomCursor />
           </SmoothScroll>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

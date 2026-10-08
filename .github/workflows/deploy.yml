@@ -81,12 +81,18 @@ jobs:
           set -euo pipefail
           for f in index.html 404.html robots.txt sitemap.xml resume.pdf \
                    work/gallery-photos-videos/index.html work/messages/index.html \
-                   work/calendar/index.html work/pdf-reader/index.html; do
+                   work/calendar/index.html work/pdf-reader/index.html \
+                   og.png work/calendar/og.png blog/index.html \
+                   blog/edge-to-edge-is-not-optional/index.html \
+                   blog/edge-to-edge-is-not-optional/og.png; do
             [ -s "out/$f" ] || { echo "::error::missing or empty: out/$f"; exit 1; }
           done
           # .nojekyll is deliberately empty, so only its presence can be checked.
           [ -e out/.nojekyll ] || { echo "::error::missing: out/.nojekyll"; exit 1; }
           head -c 5 out/resume.pdf | grep -q '%PDF' || { echo "::error::out/resume.pdf is not a PDF"; exit 1; }
+          # A link preview served with the wrong content type is rejected by every
+          # crawler, so check the bytes really are a PNG and not an error page.
+          file --mime-type -b out/og.png | grep -q '^image/png$' || { echo "::error::out/og.png is not a PNG"; exit 1; }
           grep -q 'darshakdharaiya.github.io' out/sitemap.xml || { echo "::error::sitemap has the wrong origin"; exit 1; }
           [ -d out/_next ] || { echo "::error::out/_next is missing"; exit 1; }
           echo "export verified: $(du -sh out | cut -f1)"
