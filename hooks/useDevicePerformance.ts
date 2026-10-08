@@ -7,14 +7,16 @@ export type PerformanceProfile = {
   tier: MaterialTier;
   particleCount: number;
   constellationCount: number;
+  /** Stars in the spiral galaxy (one draw call, so this can stay generous) */
+  galaxyStars: number;
   maxDpr: number;
   isMobile: boolean;
 };
 
 const PROFILES: Record<MaterialTier, Omit<PerformanceProfile, "isMobile">> = {
-  high: { tier: "high", particleCount: 7000, constellationCount: 260, maxDpr: 1.75 },
-  medium: { tier: "medium", particleCount: 4200, constellationCount: 180, maxDpr: 1.5 },
-  low: { tier: "low", particleCount: 1800, constellationCount: 90, maxDpr: 1.25 },
+  high: { tier: "high", particleCount: 7000, constellationCount: 260, galaxyStars: 11000, maxDpr: 1.75 },
+  medium: { tier: "medium", particleCount: 4200, constellationCount: 180, galaxyStars: 6000, maxDpr: 1.5 },
+  low: { tier: "low", particleCount: 1800, constellationCount: 90, galaxyStars: 2600, maxDpr: 1.25 },
 };
 
 /**
@@ -37,6 +39,7 @@ export function detectPerformance(): PerformanceProfile {
   if (isMobile) {
     profile.particleCount = Math.min(profile.particleCount, 2200);
     profile.constellationCount = Math.min(profile.constellationCount, 110);
+    profile.galaxyStars = Math.min(profile.galaxyStars, 4000);
     profile.maxDpr = Math.min(profile.maxDpr, 1.5);
   }
   return profile;

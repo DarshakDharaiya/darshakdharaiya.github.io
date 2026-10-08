@@ -5,6 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { AdaptiveDpr, PerformanceMonitor } from "@react-three/drei";
 import { usePathname } from "next/navigation";
 import { ParticleField } from "./ParticleField";
+import { Galaxy } from "./Galaxy";
 import { CAMERA } from "@/lib/three/camera";
 import { Lights } from "./Lights";
 import { CameraController } from "./CameraController";
@@ -50,6 +51,7 @@ export default function Scene({ profile, onReady }: { profile: PerformanceProfil
         <MouseController />
         <CameraController />
         <Lights />
+        <Galaxy profile={profile} />
         <ParticleField count={profile.particleCount} constellations={profile.constellationCount} />
       </PerformanceMonitor>
     </Canvas>

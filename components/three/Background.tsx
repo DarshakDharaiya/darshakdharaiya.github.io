@@ -40,8 +40,8 @@ export function Background() {
       <div className="ambient-glow absolute -top-[20vmax] -left-[18vmax] size-[55vmax] rounded-full" />
       <div className="ambient-glow absolute top-[30%] -right-[24vmax] size-[50vmax] rounded-full [animation-delay:-9s]" />
       {mount && profile && <Scene profile={profile} onReady={() => setReady(true)} />}
-      {/* Soft vignette keeps edges calm and text legible over the field */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,var(--bg)_100%)] opacity-70" />
+      {/* Soft vignette keeps edges calm and text legible over the field and the galaxy */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_44%,var(--bg)_100%)] opacity-60" />
     </div>
   );
 }
