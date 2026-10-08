@@ -236,7 +236,7 @@ html.has-custom-cursor * {
 .ambient-glow {
   background: radial-gradient(closest-side, color-mix(in oklab, var(--accent) 34%, transparent), transparent);
   filter: blur(40px);
-  opacity: 0.28;
+  opacity: 0.38;
   animation: ambient-drift 22s var(--ease-in-out-quart) infinite alternate;
 }
 [data-theme="dark"] .ambient-glow {
@@ -289,8 +289,20 @@ html.has-custom-cursor * {
   mix-blend-mode: normal;
 }
 
+/*
+ * Telegram-style reveal: the incoming theme is clipped to a circle that grows from
+ * the toggle, while the outgoing one stays put underneath (hence `animation: none`
+ * on the old snapshot above).
+ *
+ * `--theme-r` is measured in JS as the exact distance from the origin to the furthest
+ * corner, so the circle finishes the instant it covers the viewport and not a frame
+ * later. The 150vmax fallback only applies if the custom property is missing.
+ *
+ * The curve is a decelerate, not an ease-in-out: a wipe that starts slowly reads as
+ * lag, because the pointer has already left the button by the time anything moves.
+ */
 html.theme-transition ::view-transition-new(root) {
-  animation: theme-reveal 700ms var(--ease-in-out-quart) both;
+  animation: theme-reveal 520ms var(--ease-out-quart) both;
 }
 
 @keyframes theme-reveal {
@@ -298,7 +310,7 @@ html.theme-transition ::view-transition-new(root) {
     clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 0%));
   }
   to {
-    clip-path: circle(150vmax at var(--theme-x, 50%) var(--theme-y, 0%));
+    clip-path: circle(var(--theme-r, 150vmax) at var(--theme-x, 50%) var(--theme-y, 0%));
   }
 }
 
