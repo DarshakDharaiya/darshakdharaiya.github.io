@@ -12,6 +12,9 @@ import { SceneMoodObserver } from "@/components/layout/SceneMoodObserver";
 import { Background } from "@/components/three/Background";
 import { ResumeTab } from "@/components/layout/ResumeTab";
 import { Analytics } from "@/components/layout/Analytics";
+import { experience } from "@/data/experience";
+import { avatar } from "@/data/avatar";
+import { personId } from "@/lib/seo";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"], display: "swap" });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap" });
@@ -45,7 +48,9 @@ export const metadata: Metadata = {
   keywords: [...site.keywords],
   authors: [{ name: site.name, url: site.url }],
   creator: site.name,
-  alternates: { canonical: "/" },
+  // No canonical or robots here: both would be inherited by the 404 page, which
+  // then claimed to be the home page while Next also marked it noindex. The home
+  // page sets its own canonical, and indexing is already the default.
   openGraph: {
     type: "website",
     url: site.url,
@@ -55,8 +60,12 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [ogImage],
   },
-  twitter: { card: "summary_large_image", title: site.name, description, images: [ogImage] },
-  robots: { index: true, follow: true },
+  twitter: {
+    card: "summary_large_image",
+    title: `${site.name} — ${site.roles[0]}`,
+    description,
+    images: [ogImage],
+  },
 };
 
 export const viewport: Viewport = {
@@ -69,15 +78,52 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-const personJsonLd = {
+const [city, country] = site.location.split(", ");
+
+/**
+ * One graph, on every page: the person and the site. Article and case-study pages
+ * point their author at the same @id rather than repeating the details.
+ */
+const siteJsonLd = {
   "@context": "https://schema.org",
-  "@type": "Person",
-  name: site.name,
-  url: site.url,
-  jobTitle: site.roles[0],
-  email: `mailto:${site.email}`,
-  sameAs: socials.filter((s) => s.id !== "email").map((s) => s.href),
-  knowsAbout: ["Android", "Kotlin", "Jetpack Compose", "Software Architecture", "Three.js", "React"],
+  "@graph": [
+    {
+      "@type": "Person",
+      "@id": personId,
+      name: site.name,
+      givenName: site.firstName,
+      familyName: site.lastName,
+      url: site.url,
+      image: `${site.url}${avatar.portrait.src}`,
+      jobTitle: site.roles[0],
+      description: site.statement,
+      email: `mailto:${site.email}`,
+      worksFor: { "@type": "Organization", name: experience[0].company },
+      address: { "@type": "PostalAddress", addressLocality: city, addressCountry: country },
+      sameAs: socials.filter((s) => s.id !== "email").map((s) => s.href),
+      knowsAbout: [
+        "Android",
+        "Kotlin",
+        "Jetpack Compose",
+        "Clean Architecture",
+        "MVI",
+        "Coroutines",
+        "Android performance",
+        "Software Architecture",
+        "Three.js",
+        "React",
+      ],
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${site.url}/#website`,
+      url: site.url,
+      name: site.name,
+      description,
+      inLanguage: "en",
+      publisher: { "@id": personId },
+    },
+  ],
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -92,7 +138,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd) }}
         />
       </head>
       <body className="grain min-h-dvh">

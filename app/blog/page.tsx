@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { sortedPosts } from "@/data/blog";
 import { site } from "@/data/site";
+import { pageMetadata } from "@/lib/seo";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { PostCard } from "@/components/sections/blog/PostCard";
 import { TextReveal } from "@/components/animations/TextReveal";
@@ -13,13 +14,13 @@ const description =
 
 export const metadata: Metadata = {
   title: "Writing",
-  description,
-  alternates: { canonical: "/blog" },
-  openGraph: {
-    type: "website",
+  ...pageMetadata({
     title: `Writing — ${site.name}`,
     description,
-  },
+    path: "/blog",
+    // No card of its own yet; the site card beats the blank preview it had before.
+    image: { url: "/og.png", alt: `${site.name} — ${site.roles[0]}` },
+  }),
 };
 
 /**

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatPostDate, getPost, posts, sortedPosts } from "@/data/blog";
 import { site } from "@/data/site";
+import { absoluteUrl, breadcrumbJsonLd, pageMetadata, personId } from "@/lib/seo";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { ChapterNav } from "@/components/case-study/ChapterNav";
 import { PostBody, headingId } from "@/components/blog/PostBody";
@@ -22,18 +23,15 @@ export async function generateMetadata(props: PageProps<"/blog/[slug]">): Promis
   if (!post) return {};
   return {
     title: post.title,
-    description: post.excerpt,
-    keywords: post.tags,
-    alternates: { canonical: `/blog/${post.slug}` },
-    openGraph: {
-      type: "article",
+    ...pageMetadata({
       title: `${post.title} — ${site.name}`,
       description: post.excerpt,
-      publishedTime: post.date,
-      authors: [site.name],
-      tags: [...post.tags],
-      images: [{ url: `/blog/${post.slug}/og.png`, width: 1200, height: 630, type: "image/png" }],
-    },
+      path: `/blog/${post.slug}`,
+      image: { url: `/blog/${post.slug}/og.png`, alt: post.title },
+      type: "article",
+      article: { publishedTime: post.date, tags: post.tags },
+      keywords: post.tags,
+    }),
   };
 }
 
@@ -51,15 +49,32 @@ export default async function BlogPostPage(props: PageProps<"/blog/[slug]">) {
     .filter((b) => b.type === "h2")
     .map((b) => ({ id: headingId(b.text), label: b.text }));
 
+  const url = absoluteUrl(`/blog/${post.slug}`);
   const articleJsonLd = {
     "@context": "https://schema.org",
-    "@type": "TechArticle",
-    headline: post.title,
-    description: post.excerpt,
-    datePublished: post.date,
-    author: { "@type": "Person", name: site.name, url: site.url },
-    keywords: post.tags.join(", "),
-    mainEntityOfPage: `${site.url}/blog/${post.slug}`,
+    "@graph": [
+      {
+        "@type": "BlogPosting",
+        headline: post.title,
+        description: post.excerpt,
+        url,
+        mainEntityOfPage: url,
+        image: `${site.url}/blog/${post.slug}/og.png`,
+        datePublished: post.date,
+        dateModified: post.date,
+        inLanguage: "en",
+        articleSection: post.category,
+        keywords: post.tags.join(", "),
+        timeRequired: `PT${post.readingMinutes}M`,
+        author: { "@type": "Person", "@id": personId, name: site.name, url: site.url },
+        publisher: { "@id": personId },
+      },
+      breadcrumbJsonLd([
+        { name: "Home", path: "/" },
+        { name: "Writing", path: "/blog" },
+        { name: post.title, path: `/blog/${post.slug}` },
+      ]),
+    ],
   };
 
   return (

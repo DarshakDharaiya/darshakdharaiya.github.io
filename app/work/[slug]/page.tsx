@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { ViewTransition, type ReactNode } from "react";
 import { featuredProjects, getProject } from "@/data/projects";
 import { site } from "@/data/site";
+import { absoluteUrl, breadcrumbJsonLd, pageMetadata, personId } from "@/lib/seo";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { PhoneStage } from "@/components/sections/work/PhoneStage";
 import { ChapterNav } from "@/components/case-study/ChapterNav";
@@ -28,14 +29,14 @@ export async function generateMetadata(props: PageProps<"/work/[slug]">): Promis
   if (!p) return {};
   return {
     title: `${p.title} — Case study`,
-    description: p.description,
-    alternates: { canonical: `/work/${p.slug}` },
-    openGraph: {
+    ...pageMetadata({
       title: `${p.title} — ${site.name}`,
       description: p.description,
+      path: `/work/${p.slug}`,
       // The generated 1.91:1 card, not a 720x1280 screenshot that crops to a sliver.
-      images: [{ url: `/work/${p.slug}/og.png`, width: 1200, height: 630, type: "image/png" }],
-    },
+      image: { url: `/work/${p.slug}/og.png`, alt: `${p.title} — case study` },
+      keywords: p.stack,
+    }),
   };
 }
 
@@ -61,8 +62,34 @@ export default async function CaseStudyPage(props: PageProps<"/work/[slug]">) {
   const next = featuredProjects[(index + 1) % featuredProjects.length];
   const chapters = CHAPTERS.map((label, i) => ({ id: `ch-${pad2(i + 1)}`, label }));
 
+  // No aggregateRating or offers: the data has a rating but no rating count, and
+  // no price, and Google treats invented values in those fields as spam.
+  const appJsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "MobileApplication",
+        name: project.title,
+        description: project.description,
+        operatingSystem: "Android",
+        url: absoluteUrl(`/work/${project.slug}`),
+        installUrl: project.store.url,
+        sameAs: project.store.url,
+        image: `${site.url}${project.icon}`,
+        screenshot: project.screenshots.map((s) => `${site.url}${s.src}`),
+        author: { "@type": "Person", "@id": personId, name: site.name },
+      },
+      breadcrumbJsonLd([
+        // Work lives in a home-page section, not at a URL of its own.
+        { name: "Home", path: "/" },
+        { name: project.title, path: `/work/${project.slug}` },
+      ]),
+    ],
+  };
+
   return (
     <PageTransition>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(appJsonLd) }} />
       <main id="main" className="pb-section">
         {/* ───────── Hero ───────── */}
         <header className="container-x pt-32 md:pt-40">
