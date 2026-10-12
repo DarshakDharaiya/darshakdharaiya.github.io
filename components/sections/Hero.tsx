@@ -16,11 +16,8 @@ import { ease } from "@/lib/animation";
 
 const MemojiStage = dynamic(() => import("@/components/sections/MemojiStage"), { ssr: false });
 
-const fadeUp = (delay: number) => ({
-  initial: { opacity: 0, y: 24, filter: "blur(8px)" },
-  animate: { opacity: 1, y: 0, filter: "blur(0px)" },
-  transition: { duration: 1.2, ease: ease.outExpo, delay },
-});
+// CSS, not Motion: the intro plays from first paint rather than after hydration.
+const fadeUp = (delay: number) => ({ style: { animationDelay: `${delay}s` } });
 
 export function Hero() {
   const ref = useRef<HTMLElement>(null);
@@ -47,13 +44,13 @@ export function Hero() {
       >
         <MemojiStage className="max-w-[17rem] sm:max-w-xs lg:order-2 lg:col-span-5 lg:max-w-[34rem]" />
         <div className="max-w-[min(100%,52rem)] lg:order-1 lg:col-span-7">
-          <motion.p {...fadeUp(0.15)} className="eyebrow flex items-center gap-3">
+          <p {...fadeUp(0.15)} className="intro-fade eyebrow flex items-center gap-3">
             <span className="relative flex size-2" aria-hidden>
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-accent opacity-60" />
               <span className="relative inline-flex size-2 rounded-full bg-accent" />
             </span>
             Hello, I&apos;m
-          </motion.p>
+          </p>
 
           <h1 id="hero-title" className="mt-5 text-display font-semibold">
             <TextReveal text={site.firstName} immediate delay={0.25} className="block" />
@@ -65,24 +62,24 @@ export function Hero() {
             />
           </h1>
 
-          <motion.p {...fadeUp(0.9)} className="mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 text-lead text-fg">
+          <p {...fadeUp(0.9)} className="intro-fade mt-7 flex flex-wrap items-center gap-x-3 gap-y-1 text-lead text-fg">
             {site.roles.map((role, i) => (
               <span key={role} className="flex items-center gap-3">
                 {i > 0 && <span className="text-fg-subtle" aria-hidden>/</span>}
                 {role}
               </span>
             ))}
-          </motion.p>
+          </p>
 
-          <motion.p {...fadeUp(1.05)} className="mt-5 max-w-xl text-lead text-fg-muted text-balance">
+          <p {...fadeUp(1.05)} className="intro-fade mt-5 max-w-xl text-lead text-fg-muted text-balance">
             {site.statement}
-          </motion.p>
+          </p>
 
           {/* Proof before the ask. These are the numbers buried in Achievements,
               lifted above the fold where a recruiter skimming for a minute sees them. */}
-          <motion.dl
+          <dl
             {...fadeUp(1.15)}
-            className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4 sm:gap-x-10"
+            className="intro-fade mt-9 flex flex-wrap items-center gap-x-7 gap-y-4 sm:gap-x-10"
           >
             {heroProof.map((stat) => (
               <div key={stat.label} className="flex flex-col">
@@ -90,9 +87,9 @@ export function Hero() {
                 <dt className="mt-0.5 text-sm text-fg-muted">{stat.label}</dt>
               </div>
             ))}
-          </motion.dl>
+          </dl>
 
-          <motion.div {...fadeUp(1.3)} className="mt-10 flex flex-wrap items-center gap-3">
+          <div {...fadeUp(1.3)} className="intro-fade mt-10 flex flex-wrap items-center gap-3">
             <Button
               href="/#work"
               arrow="right"
@@ -109,9 +106,9 @@ export function Hero() {
             <Button href={site.resumePath} download="Darshak-Dharaiya-Resume.pdf" variant="glass" arrow="down">
               Download résumé
             </Button>
-          </motion.div>
+          </div>
 
-          <motion.ul {...fadeUp(1.45)} className="mt-10 flex items-center gap-2" aria-label="Social links">
+          <ul {...fadeUp(1.45)} className="intro-fade mt-10 flex items-center gap-2" aria-label="Social links">
             {socials.map((s) => (
               <li key={s.id}>
                 <Magnetic strength={0.4}>
@@ -127,14 +124,14 @@ export function Hero() {
                 </Magnetic>
               </li>
             ))}
-          </motion.ul>
+          </ul>
         </div>
       </motion.div>
 
       {/* Footer rail */}
-      <motion.div
+      <div
         {...fadeUp(1.6)}
-        className="container-x absolute inset-x-0 bottom-6 hidden items-end justify-between md:flex"
+        className="intro-fade container-x absolute inset-x-0 bottom-6 hidden items-end justify-between md:flex"
       >
         <p className="eyebrow">
           {site.location} · {site.availability}
@@ -149,7 +146,7 @@ export function Hero() {
             />
           </span>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

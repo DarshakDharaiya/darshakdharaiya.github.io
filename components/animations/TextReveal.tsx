@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { motion, type Variants } from "motion/react";
 import { ease, viewportOnce } from "@/lib/animation";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
@@ -62,12 +62,38 @@ export function TextReveal({
   }
 
   let index = 0;
+
+  // On-mount reveals are pure CSS (.intro-rise) so they play from the first paint,
+  // not after hydration — these are page h1s and usually the LCP element.
+  if (immediate) {
+    return (
+      <Static as={as} className={className} style={{ perspective: 800 }}>
+        <span className="sr-only">{label}</span>
+        {lines.map((line, li) => (
+          <span key={li} aria-hidden className={cn("block", lineClassName)}>
+            {line.split(" ").map((word, wi, words) => (
+              <span key={wi} className="inline-block overflow-hidden pb-[0.08em] -mb-[0.08em] align-top">
+                {(by === "chars" ? word.split("") : [word]).map((part) => (
+                  <span key={index} className="intro-rise" style={{ animationDelay: `${delay + each * index++}s` }}>
+                    {part}
+                  </span>
+                ))}
+                {wi < words.length - 1 && <span className="inline-block">&nbsp;</span>}
+              </span>
+            ))}
+          </span>
+        ))}
+      </Static>
+    );
+  }
+
   const MotionTag = motion[as];
   return (
     <MotionTag
       className={className}
       initial="hidden"
-      {...(immediate ? { animate: "visible" } : { whileInView: "visible", viewport: viewportOnce })}
+      whileInView="visible"
+      viewport={viewportOnce}
       transition={{ staggerChildren: each, delayChildren: delay }}
       style={{ perspective: 800 }}
     >
@@ -96,6 +122,14 @@ export function TextReveal({
   );
 }
 
-function Static({ as: Tag, ...p }: { as: NonNullable<Props["as"]>; className?: string; children: ReactNode }) {
+function Static({
+  as: Tag,
+  ...p
+}: {
+  as: NonNullable<Props["as"]>;
+  className?: string;
+  style?: CSSProperties;
+  children: ReactNode;
+}) {
   return <Tag {...p} />;
 }

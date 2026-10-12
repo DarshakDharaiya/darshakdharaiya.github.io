@@ -11,13 +11,6 @@ export const ease = {
   spring: [0.34, 1.36, 0.64, 1],
 } as const satisfies Record<string, [number, number, number, number]>;
 
-/** GSAP string equivalents */
-export const gsapEase = {
-  outExpo: "expo.out",
-  outQuart: "quart.out",
-  inOutQuart: "quart.inOut",
-} as const;
-
 export const duration = {
   instant: 0.12,
   fast: 0.24,

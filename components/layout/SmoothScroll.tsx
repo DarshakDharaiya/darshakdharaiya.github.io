@@ -2,18 +2,15 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import Lenis from "lenis";
-import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { sceneStore } from "@/lib/three/store";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const LenisContext = createContext<Lenis | null>(null);
 export const useLenis = () => useContext(LenisContext);
 
 /**
- * Lenis smooth scrolling, driven by GSAP's ticker so ScrollTrigger and Lenis share one clock.
+ * Lenis smooth scrolling on its own rAF loop. (It used to ride GSAP's ticker, but
+ * nothing uses ScrollTrigger, and GSAP was ~45 KB gzipped of first-load JS.)
  * Disabled entirely for reduced-motion users (native scrolling, no inertia).
  * Also publishes scroll state to the WebGL store.
  */
@@ -42,23 +39,19 @@ export function SmoothScroll({ children }: { children: ReactNode }) {
       smoothWheel: true,
       // Touch keeps native momentum — it already feels right on phones
       syncTouch: false,
+      autoRaf: true,
     });
 
     instance.on("scroll", (l: Lenis) => {
-      ScrollTrigger.update();
       publish();
       sceneStore.scroll.velocity = l.velocity;
     });
 
-    const tick = (time: number) => instance.raf(time * 1000);
-    gsap.ticker.add(tick);
-    gsap.ticker.lagSmoothing(0);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- expose instance to consumers
     setLenis(instance);
     publish();
 
     return () => {
-      gsap.ticker.remove(tick);
       instance.destroy();
       setLenis(null);
     };

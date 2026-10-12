@@ -15,7 +15,9 @@ export function Work() {
         />
         <div className="space-y-36 md:space-y-48">
           {featuredProjects.map((p, i) => (
-            <ProjectCard key={p.slug} project={p} index={i} />
+            // The card is a client component, so everything passed to it is inlined into
+            // the home page's HTML. The case study is ~20 KB of text it never reads.
+            <ProjectCard key={p.slug} project={{ ...p, caseStudy: undefined }} index={i} />
           ))}
         </div>
       </div>
