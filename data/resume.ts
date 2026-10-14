@@ -45,7 +45,7 @@ export const resume = {
     },
     {
       title: "PDF Reader, Editor & Office Suite",
-      meta: "Recently launched",
+      meta: store("pdf-reader"),
       line: "Compose / Clean Architecture app — view, edit, sign, merge, split and compress PDFs, plus Office viewing on a PDFium engine. 34-module Gradle build.",
     },
     {

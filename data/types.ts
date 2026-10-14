@@ -59,6 +59,8 @@ export type Project = {
   accent: string;
   icon: string;
   screenshots: Screenshot[];
+  /** Wide store graphic, shown at the top of the case study */
+  banner?: Screenshot;
   links?: { github?: string; live?: string };
   featured: boolean;
   caseStudy?: CaseStudy;

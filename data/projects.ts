@@ -327,17 +327,26 @@ export const projects: Project[] = [
     store: {
       packageName: "com.smartpdf.pdfviewer.documentreader",
       url: play("com.smartpdf.pdfviewer.documentreader"),
-      installs: "New",
-      lastUpdated: "Sep 2026",
+      installs: "10K+",
+      lastUpdated: "Oct 2026",
     },
-    achievements: ["34 Gradle modules", "api / data / domain / ui per feature", "Recently launched on Google Play"],
+    achievements: ["34 Gradle modules", "api / data / domain / ui per feature", "10K+ installs on Google Play"],
     accent: "#e05a4f",
     icon: "/projects/pdf/icon.webp",
     screenshots: [
-      shot("pdf", 1, 446, 800, "Document list"),
-      shot("pdf", 2, 421, 801, "Reader"),
-      shot("pdf", 3, 451, 798, "Tools"),
+      shot("pdf", 1, 720, 1280, "All files in light and dark mode"),
+      shot("pdf", 2, 720, 1280, "Scan a document to PDF"),
+      shot("pdf", 3, 720, 1280, "Add an e-signature"),
+      shot("pdf", 4, 720, 1280, "Page management"),
+      shot("pdf", 5, 720, 1280, "Convert images to PDF"),
+      shot("pdf", 6, 720, 1280, "PDF tools"),
     ],
+    banner: {
+      src: "/projects/pdf/banner.webp",
+      width: 1600,
+      height: 1092,
+      alt: "PDF Reader: read PDFs, edit files and manage every document in one app",
+    },
     featured: true,
     caseStudy: {
       overview:

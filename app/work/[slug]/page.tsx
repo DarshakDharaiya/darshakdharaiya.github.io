@@ -161,6 +161,18 @@ export default async function CaseStudyPage(props: PageProps<"/work/[slug]">) {
 
           <article className="space-y-28 md:space-y-40 lg:col-span-8 lg:col-start-5">
             <Chapter id={chapters[0].id} n={1} title="Overview">
+              {project.banner && (
+                <Reveal className="mb-10">
+                  <Image
+                    src={project.banner.src}
+                    alt={project.banner.alt}
+                    width={project.banner.width}
+                    height={project.banner.height}
+                    sizes="(min-width: 1024px) 60vw, 100vw"
+                    className="h-auto w-full rounded-card border border-line shadow-soft-lg"
+                  />
+                </Reveal>
+              )}
               <p className="text-h3 font-medium text-balance">{cs.overview}</p>
               {cs.video && (
                 <video
